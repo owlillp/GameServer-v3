@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# Джобы бэкенда и Docker читают приватный feed Owlip.* и требуют секреты
+# NUGET_USERNAME / NUGET_PASSWORD, которых нет у PR из форков, поэтому там они
+# пропускаются. Кэш NuGet намеренно не используется: PR из форка может прочитать
+# кэш базовой ветки, а в нём лежали бы приватные пакеты.
+jobs:
+  backend:
+    name: Backend (${{ matrix.service }})
+    if: github.event.pull_request.head.repo.fork != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [AuthService, ProfileService, RealtimeService]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore "${{ matrix.service }}/${{ matrix.service }}.slnx"
+        env:
+          # Ключ "github" — имя источника из backend/nuget.config.
+          NuGetPackageSourceCredentials_github: Username=${{ secrets.NUGET_USERNAME }};Password=${{ secrets.NUGET_PASSWORD }}
+
+      - name: Build
+        run: dotnet build "${{ matrix.service }}/${{ matrix.service }}.slnx" -c Release --no-restore
+
+      # Интеграционные тесты поднимают Postgres и RabbitMQ через Testcontainers.
+      - name: Test
+        run: dotnet test "${{ matrix.service }}/${{ matrix.service }}.slnx" -c Release --no-build
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Та же мажорная версия Node, что и в frontend/Dockerfile.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+
+      # next build заодно проверяет типы.
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://localhost:6101
+
+  docker:
+    name: Docker images
+    if: github.event.pull_request.head.repo.fork != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build all compose images
+        run: docker compose build
+        env:
+          NUGET_USERNAME: ${{ secrets.NUGET_USERNAME }}
+          NUGET_PASSWORD: ${{ secrets.NUGET_PASSWORD }}

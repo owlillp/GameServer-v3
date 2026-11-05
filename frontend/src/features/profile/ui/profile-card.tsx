@@ -55,7 +55,10 @@ export function ProfileCard() {
 
   if (player.error) {
     return (
-      <ApiErrorList error={player.error} fallback="Не удалось загрузить профиль" />
+      <ApiErrorList
+        error={player.error}
+        fallback="Не удалось загрузить профиль"
+      />
     );
   }
 

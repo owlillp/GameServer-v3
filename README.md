@@ -186,6 +186,16 @@ cd backend/AuthService
 dotnet test
 ```
 
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) запускается на push в `main` и на
+pull request: сборка и тесты каждого backend-сервиса, lint, Prettier и сборка
+фронтенда, сборка всех образов из `docker-compose.yml`.
+
+Для доступа к приватным пакетам `Owlip.*` в настройках репозитория нужны секреты
+`NUGET_USERNAME` и `NUGET_PASSWORD` (PAT с `read:packages`). В PR из форков
+секретов нет, поэтому там выполняется только проверка фронтенда.
+
 ## API
 
 | Метод | Путь             | Permission     | Описание                                   |
