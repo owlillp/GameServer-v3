@@ -1,0 +1,13 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+out
+build
+
+# misc
+coverage
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo

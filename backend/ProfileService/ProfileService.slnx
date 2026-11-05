@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/ProfileService.Contracts/ProfileService.Contracts.csproj" />
+  <Project Path="src/ProfileService.Core/ProfileService.Core.csproj" />
+  <Project Path="src/ProfileService.Domain/ProfileService.Domain.csproj" />
+  <Project Path="src/ProfileService.Infrastructure.Postgres/ProfileService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/ProfileService.Web/ProfileService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

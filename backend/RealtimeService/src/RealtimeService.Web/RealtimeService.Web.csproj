@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Owlip.Shared.Authentication" />
+      <PackageReference Include="owlip.shared.framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RealtimeService.Contracts\RealtimeService.Contracts.csproj" />
+      <ProjectReference Include="..\RealtimeService.Core\RealtimeService.Core.csproj" />
+      <ProjectReference Include="..\RealtimeService.Infrastructure.Redis\RealtimeService.Infrastructure.Redis.csproj" />
+    </ItemGroup>
+
+</Project>

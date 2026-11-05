@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/RealtimeService.Contracts/RealtimeService.Contracts.csproj" />
+  <Project Path="src/RealtimeService.Core/RealtimeService.Core.csproj" />
+  <Project Path="src/RealtimeService.Infrastructure.Redis/RealtimeService.Infrastructure.Redis.csproj" />
+  <Project Path="src/RealtimeService.Web/RealtimeService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

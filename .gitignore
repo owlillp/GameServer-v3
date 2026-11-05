@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+!frontend/.env.development
+
+# Локальный dev-сертификат для nginx (генерируется scripts/prepare-nginx-https.ps1)
+nginx/certificates/
+
+# macOS
+.DS_Store

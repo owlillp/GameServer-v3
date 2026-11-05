@@ -1,0 +1,43 @@
+{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.Async",
+      "Serilog.Formatting.Compact",
+      "Serilog.Enrichers.Environment",
+      "Serilog.Enrichers.Process",
+      "Serilog.Enrichers.Span",
+      "Serilog.Enrichers.Thread",
+      "Serilog.Exceptions"
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithEnvironmentName",
+      "WithProcessId",
+      "WithProcessName",
+      "WithThreadId",
+      "WithSpan",
+      "WithExceptionDetails"
+    ],
+    "Properties": {
+      "service_namespace": "auth-service",
+      "log_schema": "clef"
+    },
+    "WriteTo": [
+      {
+        "Name": "Async",
+        "Args": {
+          "configure": [
+            {
+              "Name": "Console",
+              "Args": {
+                "formatter": "Serilog.Formatting.Compact.RenderedCompactJsonFormatter, Serilog.Formatting.Compact"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

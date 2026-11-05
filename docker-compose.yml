@@ -1,0 +1,201 @@
+services:
+  auth-migrator:
+    container_name: gameserver-v3-auth-migrator
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__AuthDb}"]
+    restart: "no"
+
+  auth-service:
+    container_name: gameserver-v3-auth-service
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  profile-migrator:
+    container_name: gameserver-v3-profile-migrator
+    build:
+      context: ./backend
+      dockerfile: ProfileService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__ProfileDb=${ConnectionStrings__ProfileDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__ProfileDb}"]
+    restart: "no"
+
+  profile-service:
+    container_name: gameserver-v3-profile-service
+    build:
+      context: ./backend
+      dockerfile: ProfileService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__ProfileDb=${ConnectionStrings__ProfileDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      profile-migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  realtime-service:
+    container_name: gameserver-v3-realtime-service
+    build:
+      context: ./backend
+      dockerfile: RealtimeService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: always
+
+  postgres:
+    container_name: gameserver-v3-postgres
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # 5437, чтобы не конфликтовать с GameServer (5435) и GameServer-v2 (5436).
+      - "5437:5432"
+    volumes:
+      - gameserver-v3-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    container_name: gameserver-v3-rabbitmq
+    image: rabbitmq:4-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI
+    volumes:
+      - gameserver-v3-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: gameserver-v3-redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - gameserver-v3-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    container_name: gameserver-v3-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Единый API-origin: и OIDC (AuthService), и JSON API идут через nginx.
+        NEXT_PUBLIC_API_URL: https://localhost:6101
+    # Наружу не публикуется: вход в приложение — через nginx
+    # (https://localhost:6100).
+    expose:
+      - "3000"
+    restart: always
+
+  nginx:
+    container_name: gameserver-v3-nginx
+    image: nginx:alpine
+    ports:
+      # 6100 — SPA, 6101 — API (AuthService в корне). GameServer занимает 5000/5001.
+      - "6100:6100"
+      - "6101:6101"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certificates:/etc/nginx/certificates:ro
+    depends_on:
+      - auth-service
+      - profile-service
+      - realtime-service
+      - frontend
+    restart: always
+
+secrets:
+  nuget_password:
+    environment: NUGET_PASSWORD
+
+volumes:
+  gameserver-v3-postgres-data:
+  gameserver-v3-rabbitmq-data:
+  gameserver-v3-redis-data:
