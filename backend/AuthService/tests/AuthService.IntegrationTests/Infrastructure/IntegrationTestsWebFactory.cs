@@ -15,6 +15,7 @@ using OpenIddict.Server.AspNetCore;
 using Respawn;
 using System.Threading.RateLimiting;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 
 namespace AuthService.IntegrationTests.Infrastructure;
 
@@ -35,6 +36,8 @@ public sealed class IntegrationTestsWebFactory : WebApplicationFactory<AuthServi
         .WithPassword("postgres")
         .Build();
 
+    private readonly RabbitMqContainer _rabbitMq = new RabbitMqBuilder("rabbitmq:4-management").Build();
+
     private NpgsqlConnection _connection = null!;
     private Respawner _respawner = null!;
 
@@ -42,7 +45,7 @@ public sealed class IntegrationTestsWebFactory : WebApplicationFactory<AuthServi
 
     public async Task InitializeAsync()
     {
-        await _database.StartAsync();
+        await Task.WhenAll(_database.StartAsync(), _rabbitMq.StartAsync());
         ConnectionString = _database.GetConnectionString();
 
         await using AsyncServiceScope scope = Services.CreateAsyncScope();
@@ -69,6 +72,7 @@ public sealed class IntegrationTestsWebFactory : WebApplicationFactory<AuthServi
         }
 
         await _database.DisposeAsync();
+        await _rabbitMq.DisposeAsync();
     }
 
     public Task ResetDatabaseAsync() => _respawner.ResetAsync(_connection);
@@ -80,6 +84,7 @@ public sealed class IntegrationTestsWebFactory : WebApplicationFactory<AuthServi
         // UseSetting (unlike ConfigureAppConfiguration) применяется до того,
         // как Program читает конфигурацию при регистрации DI.
         builder.UseSetting("ConnectionStrings:AuthDb", ConnectionString);
+        builder.UseSetting("ConnectionStrings:RabbitMQ", _rabbitMq.GetConnectionString());
         builder.UseSetting("Authentication:Authority", "http://localhost/");
         builder.UseSetting("Authentication:Audiences:0", "auth-service");
         builder.UseSetting("OpenIddict:Issuer", "http://localhost/");

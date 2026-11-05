@@ -19,7 +19,8 @@ const services = [
   {
     icon: KeyRound,
     title: "AuthService",
-    description: "OIDC: Authorization Code + PKCE, роли и permissions в токене.",
+    description:
+      "OIDC: Authorization Code + PKCE, роли и permissions в токене.",
     tone: "bg-sky-50 text-sky-700",
   },
   {

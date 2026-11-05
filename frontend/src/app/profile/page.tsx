@@ -11,15 +11,14 @@ export default function ProfilePage() {
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold text-slate-900">Мой профиль</h1>
           <p className="text-xs text-slate-500">
-            GET /profiles/me — защищён OIDC access-токеном (Bearer). ProfileService
-            отдаёт игровой профиль и identity-поля из claims.
+            GET /profiles/me — защищён OIDC access-токеном (Bearer).
+            ProfileService отдаёт игровой профиль и identity-поля из claims.
           </p>
         </header>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6">
           <ProfileCard />
         </section>
-
       </main>
     </RequireAuth>
   );

@@ -113,7 +113,10 @@ type IdClaims = {
   preferred_username?: string;
 };
 
-function decodeUser(accessToken: string, idToken: string | null): SessionUser | null {
+function decodeUser(
+  accessToken: string,
+  idToken: string | null,
+): SessionUser | null {
   let access: AccessClaims;
   try {
     access = jwtDecode<AccessClaims>(accessToken);
@@ -141,7 +144,8 @@ function decodeUser(accessToken: string, idToken: string | null): SessionUser | 
     name: access.name ?? idName,
     email: access.email,
     roles: normalizeRoles(access.role ?? access.roles),
-    expiresAt: typeof access.exp === "number" ? new Date(access.exp * 1000) : null,
+    expiresAt:
+      typeof access.exp === "number" ? new Date(access.exp * 1000) : null,
   };
 }
 
